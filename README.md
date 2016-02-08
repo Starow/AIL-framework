@@ -3,6 +3,8 @@
 AIL
 ===
 
+![Logo](./doc/logo/logo-small.png?raw=true "AIL logo")
+
 AIL framework - Framework for Analysis of Information Leaks
 
 AIL is a modular framework to analyse potential information leaks from unstructured data sources like pastes from Pastebin or similar services. AIL framework is flexible and can be extended to support other functionalities to mine sensitive information.
@@ -12,11 +14,23 @@ AIL is a modular framework to analyse potential information leaks from unstructu
 
 AIL framework screencast: https://www.youtube.com/watch?v=9idfHCIMzBY
 
-Requirements & Installation
----------------------------
+Features
+--------
 
-Auto installation
------------------
+* Modular architecture to handle stream of unstructured or structured information
+* Default support for external ZMQ feeds as provided by CIRCL or other providers
+* Each modules can process and reprocess the information already processed by AIL
+* Detecting and extracting URLs including their geographical location (e.g. IP addresses location)
+* Extracting and validating potential leak of credit cards numbers
+* Extracting and validating email addresses leaked including DNS MX validation
+* Module for extracting Tor .onion addresses (to be further processed for analysis)
+* Extracting and validating potential hostnames (e.g. to feed Passive DNS systems)
+* A full-text indexer module to index unstructured information
+* Many more modules for extracting phone numbers, credentials, ...
+
+Installation
+------------
+
 Type these command lines for a fully automated installation and start AIL framework
 ```
 git clone https://github.com/CIRCL/AIL-framework.git
@@ -29,131 +43,14 @@ cd ~/AIL-framework/
 cd bin/
 ./LAUNCH.sh
 ```
+The default [installing_deps.sh](./installing_deps.sh) is for Debian and Ubuntu based distribution. For Arch
+linux based distribution, you can replace it with [installing_deps_archlinux.sh](./installing_deps_archlinux.sh).
 
-Manual installation
--------------------
-As AIL is based on python, obviously an installation of python is a requirement:
-``sudo apt-get install python2.7``
+There is also a [Travis file](.travis.yml) used for automating the installation that can be used to build and install AIL on other
+systems.
 
-In addition pip, virtualenv and screen are needed:
-```
-sudo apt-get install python-pip
-sudo pip install virtualenv
-sudo apt-get install screen
-sudo apt-get install unzip
-```
-
-You need to create a variable AILENV that will be the installation path:
-
-``export AILENV="/home/user/AIL-framework"``
-
-Usually the installation path is where the project is cloned.
-
-Then create a Python virtual environment:
-
-```
-cd $AILENV
-virtualenv AILENV
-```
-
-And install these few more packets:
-```
-sudo apt-get install g++
-sudo apt-get install python-dev
-sudo apt-get install python-tk
-sudo apt-get install screen
-sudo apt-get install libssl-dev
-sudo apt-get install libfreetype6-dev
-sudo apt-get install python-numpy
-sudo apt-get install libadns1
-sudo apt-get install libadns1-dev
-sudo apt-get install libev-dev (redis-levelDB dependency)
-sudo apt-get install libgmp-dev (redis-levelDB dependency)
-```
-
-Then these modules need to be install with pip inside the virtual environment:
-(Activating virtualenv)
-```
-. ./AILENV/bin/activate
-```
-
-You'll need to clone langid:
-[https://github.com/saffsd/langid.py]
-And install it:
-```
-python setup.py install
-```
-
-These are all the packages you can install with pip:
-
-```
-pip install redis
-pip install logbook
-pip install pubsublogger
-pip install networkx
-pip install crcmod
-pip install mmh3
-pip install dnspython
-pip install pyzmq
-pip install texttable
-pip install -U textblob
-python -m textblob.download_corpora
-pip install python-magic
-pip install numpy
-pip install flask
-pip install nltk
-pip install whoosh
-pip install matplotlib ----- (sudo ln -s freetype2/ft2build.h in /usr/include/)
-pip install pybloomfiltermmap ----- (you may need to sudo apt-get install libssl-dev)
-pip install ipaddress
-pip install http://adns-python.googlecode.com/files/adns-python-1.2.1.tar.gz
-pip install https://github.com/trolldbois/python-cymru-services/archive/master.zip
-```
-
-Installing Redis & Level DB
----------------------------
-
-Assuming that you install everything under /opt/ with adequate permissions:
-
-```
-wget http://download.redis.io/releases/redis-2.8.12.tar.gz
-tar -xvf redis-2.8.12.tar.gz -C /opt/
-```
-And follow the README after extraction.
-
-When redis is properly installed you can edit your own config files for
-the different required databases or just take the config from the project
-located under ``/config/``
-
-```
-git clone https://github.com/KDr2/redis-leveldb.git
-```
-Follow the redis-leveldb README.
-
-Then create these directories
-
-```
-cd $AILENV
-	mkdir PASTES
-	mkdir Blooms
-	mkdir dumps
-
-mkdir LEVEL_DB_DATA
-cd LEVEL_DB_DATA/
-	mkdir 2014
-	mkdir 2013
-```
-
-Starting AIL
-------------
-
-If you installed all the requirements described above, you should be able to start AIL framework:
-
-```
-cd $AILENV
-cd bin
-./LAUNCH.sh
-```
+Starting AIL web interface
+--------------------------
 
 To start with the web interface, you need to fetch the required Javascript/CSS files:
 
@@ -175,49 +72,21 @@ Eventually you can browse the status of the AIL framework at the following URL:
 
         ``http://localhost:7000/``
 
-Create a new module
--------------------
+How to create a new module
+--------------------------
 
-Assuming you already downloaded the project and configured everything:
+If you want to add a new processing or analysis module in AIL, it's simple.
 
-* Redis databases [http://redis.io/]
-* Redis Level DB [https://github.com/KDr2/redis-leveldb]
+1. Add your module name in [./bin/packages/modules.cfg](./bin/packages/modules.cfg) and subscribe to the Redis_Global at minimum.
 
-This module will recover from a streams all the Tor .onion addresses, which look like this:
-"http://3g2upl4pq6kufc4m.onion/"
+2. Use [./bin/template.py](./bin/template.py) as a sample module and create a new file in bin/ with the module name used in the modules.cfg configuration.
 
-Basically we want to match all pastes in with ``.onion`` addresses inside.
+How to contribute a module
+--------------------------
 
-For that you can already use the module ``ZMQ_PubSub_Categ`` and just
-create your own category file in: ``/file/`` here it will be ``/file/onion_categ``.
+Feel free to fork the code, play with it, make some patches or add additional analysis modules.
 
-You also need to link this file inside another file (list_categ_files).
-
-Inside the file "onion_categ", you will add the word "onion" (don't forget the carriage return).
-
-Once it's done, after the launch of AIL framework, every paste with the word onion inside will be forwarded on a specific channel (onion_categ).
-
-Then what you want to do is to identify these pastes to extract the .onion addresses.
-
-To do that, you'll need to create 2 scripts:
-	``ZMQ_Sub_Onion_Q.py`` (Redis bufferizing)
-	``ZMQ_Sub_Onion.py`` (The extraction)
-
-Those two files are there as an example.
-
-Overview
---------
-
-Here is a "chained tree" to show how all ZMQ Modules that are linked and how the information
-(mainly the paste) is flowing between them.
-
-The onion module is interfaced at top down level of this tree (like the ZMQ_Sub_Urls module).
-
-All modules that you want to create using the "tokenization method" and the "categories system" need to be created at this level.
-
-If you want to create a general module (e.g. using all pastes), this module needs to be created at the same level than ZMQ_Sub_Duplicate.
-
-![ZMQTree](./doc/dia/ZMQ_Queuing_Tree.jpg?raw=true "ZMQ Tree")
+To contribute your module, feel free to pull your contribution.
 
 Redis and LevelDB overview
 --------------------------
@@ -233,9 +102,9 @@ LICENSE
 
 ```
     Copyright (C) 2014 Jules Debra
-    Copyright (C) 2014 CIRCL - Computer Incident Response Center Luxembourg (c/o smile, security made in Lëtzebuerg, Groupement d'Intérêt Economique)
-    Copyright (c) 2014 Raphaël Vinot
-    Copyright (c) 2014 Alexandre Dulaunoy
+    Copyright (C) 2014-2016 CIRCL - Computer Incident Response Center Luxembourg (c/o smile, security made in Lëtzebuerg, Groupement d'Intérêt Economique)
+    Copyright (c) 2014-2016 Raphaël Vinot
+    Copyright (c) 2014-2016 Alexandre Dulaunoy
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License as published by
