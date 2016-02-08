@@ -9,7 +9,7 @@ redis
 Blooms
 LEVEL_DB_DATA
 PASTES
-bin/indexdir/
+indexdir/
 logs/
 
 # Webstuff
